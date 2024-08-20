@@ -28,11 +28,11 @@ def test_pages_availability_for_anonymous_user(db, client, name, news_object):
 
 
 @pytest.mark.parametrize(
-        'client, status',
-        (
-            (pytest.lazy_fixture('author_client'), HTTPStatus.OK),
-            (pytest.lazy_fixture('not_author_client'), HTTPStatus.NOT_FOUND),
-        ),
+    'client, status',
+    (
+        (pytest.lazy_fixture('author_client'), HTTPStatus.OK),
+        (pytest.lazy_fixture('not_author_client'), HTTPStatus.NOT_FOUND),
+    ),
 )
 @pytest.mark.parametrize(
     'name, news_object',
