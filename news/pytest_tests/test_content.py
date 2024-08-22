@@ -1,9 +1,8 @@
 import pytest
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.urls import reverse
-
 from news.forms import CommentForm
-from yanews.settings import NEWS_COUNT_ON_HOME_PAGE
 
 User = get_user_model()
 
@@ -13,13 +12,17 @@ class TestHomePage:
 
     HOME_URL = reverse("news:home")
 
-    def test_news_count(self, client, create_news):
+    def test_news_count(
+        self, client, create_news
+    ):
         response = client.get(self.HOME_URL)
         object_list = response.context["object_list"]
         news_count = object_list.count()
-        assert news_count == NEWS_COUNT_ON_HOME_PAGE
+        assert news_count == settings.NEWS_COUNT_ON_HOME_PAGE
 
-    def test_news_order(self, client, create_news):
+    def test_news_order(
+        self, client, create_news
+    ):
         response = client.get(self.HOME_URL)
         object_list = response.context["object_list"]
         all_dates = [news.date for news in object_list]
@@ -29,7 +32,9 @@ class TestHomePage:
 
 @pytest.mark.django_db
 class TestDetailPage:
-    def test_comments_order(self, client, news):
+    def test_comments_order(
+        self, client, news
+    ):
         detail_url = reverse("news:detail", args=(news.id,))
         response = client.get(detail_url)
         news = response.context["news"]
@@ -38,23 +43,18 @@ class TestDetailPage:
         sorted_timestamps = sorted(all_timestamps)
         assert all_timestamps == sorted_timestamps
 
-    @pytest.mark.parametrize(
-        "parametrized_client, comment_form",
-        (
-            (pytest.lazy_fixture("author_client"), True),
-            (pytest.lazy_fixture("not_author_client"), False),
-        ),
-    )
-    def test_different_clients_has_form(
-        self, parametrized_client, comment_form, comment
+    def test_anonymous_client_has_no_form(
+        self, client, news
     ):
-        detail_url = reverse("news:detail", args=(comment.id,))
-        response = parametrized_client.get(detail_url)
-        if comment_form:
-            assert "form" in response.context
-            assert isinstance(response.context["form"], CommentForm)
-        else:
-            assert (
-                "form" not in response.context
-                or not response.context["form"].is_bound
-            )
+        detail_url = reverse("news:detail", args=(news.id,))
+        response = client.get(detail_url)
+        assert 'form' not in response.context
+
+    def test_authorized_client_has_form(
+        self, client, news, author
+    ):
+        detail_url = reverse("news:detail", args=(news.id,))
+        client.force_login(author)
+        response = client.get(detail_url)
+        assert 'form' in response.context
+        assert isinstance(response.context['form'], CommentForm)
