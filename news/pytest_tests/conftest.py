@@ -1,9 +1,9 @@
 from datetime import timedelta
 
-import pytest
 from django.conf import settings
 from django.test.client import Client
 from django.utils import timezone
+import pytest
 
 from news.models import Comment, News
 
