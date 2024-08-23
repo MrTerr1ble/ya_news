@@ -2,9 +2,10 @@ from http import HTTPStatus
 
 import pytest
 from django.urls import reverse
+from pytest_django.asserts import assertFormError, assertRedirects
+
 from news.forms import BAD_WORDS, WARNING
 from news.models import Comment
-from pytest_django.asserts import assertFormError, assertRedirects
 
 
 @pytest.mark.django_db
@@ -40,13 +41,13 @@ def test_user_cant_use_bad_words(
     url = reverse('news:detail', args=(news.id,))
     bad_words_data = {'text': f'Какой-то текст, {BAD_WORDS[0]}, еще текст'}
     response = admin_client.post(url, data=bad_words_data)
+    comments_count = Comment.objects.count()
     assertFormError(
         response,
         form='form',
         field='text',
         errors=WARNING
     )
-    comments_count = Comment.objects.count()
     assert comments_count == 0
 
 
@@ -57,8 +58,8 @@ def test_author_can_delete_comment(
     url_to_comments = f'{url}#comments'
     delete_url = reverse('news:delete', args=(comment.id,))
     response = author_client.delete(delete_url)
-    assertRedirects(response, url_to_comments)
     comments_count = Comment.objects.count()
+    assertRedirects(response, url_to_comments)
     assert comments_count == 0
 
 
@@ -69,8 +70,8 @@ def test_author_can_edit_comment(
     url_to_comments = f'{url}#comments'
     edit_url = reverse('news:edit', args=(comment.id,))
     response = author_client.post(edit_url, data=form_data)
-    assertRedirects(response, url_to_comments)
     comment.refresh_from_db()
+    assertRedirects(response, url_to_comments)
     assert comment.text == form_data['text']
 
 
@@ -79,8 +80,8 @@ def test_user_cant_edit_comment_of_another_user(
 ):
     url = reverse('news:edit', args=(comment.id,))
     response = admin_client.post(url, form_data)
-    assert response.status_code == HTTPStatus.NOT_FOUND
     comment_from_db = Comment.objects.get(id=comment.id)
+    assert response.status_code == HTTPStatus.NOT_FOUND
     assert comment.text == comment_from_db.text
 
 
