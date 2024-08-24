@@ -2,6 +2,7 @@ from http import HTTPStatus
 
 from django.contrib.auth import get_user_model
 from django.urls import reverse
+
 import pytest
 from pytest_django.asserts import assertRedirects
 
